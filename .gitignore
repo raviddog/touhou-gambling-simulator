@@ -1,0 +1,7 @@
+/build
+/node_modules
+config.json
+bank.json
+usernames.json
+napi.h
+package-lock.json
