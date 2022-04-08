@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "child_process": "^1.0.2",
+    "cmake-js": "^6.3.0",
+    "fs": "^0.0.1-security",
+    "node-addon-api": "^4.3.0",
+    "node-gyp": "^9.0.0",
+    "tmi.js": "^1.8.5"
+  }
+}
