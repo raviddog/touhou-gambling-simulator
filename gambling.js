@@ -44,7 +44,7 @@ client.on('message', (channel, tags, message, self) => {
         var args = message.slice(1).split(' ');
         if(args.length > 0) {
             if(args[0] == 'bet') {
-                if(args.length > 2) {
+                if(args.length == 3) {
                     //  todo edit return based on bot hp
                     var id = usernames.indexOf(tags.username);
                     if(id < 0) {
