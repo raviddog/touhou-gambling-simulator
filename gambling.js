@@ -21,6 +21,7 @@ const client = new tmi.Client({
 var usernames = [];
 var bank = [];
 var currentbets = [];
+var winnermsg = "";
 
 usernames = loadFromJson("usernames");
 bank = loadFromJson("bank");
@@ -175,7 +176,7 @@ function gameDone(err, winner) {
     var t;
     if(winner == 0) {t = "left"};
     if(winner == 1) {t = "right"};
-    client.say('#raviddog', `match winner: ${t}, raviddPoint ${total} paid out`);
+    winnermsg = `match winner: ${t}, raviddPoint ${total} paid out`;
 
     currentbets = [];
 
@@ -188,6 +189,7 @@ function gameDone(err, winner) {
     // start next match
     startGameFromPrev();
     read.gameAsync(gameDone);
+    client.say('#raviddog', winnermsg);
 }
 
 function mainLoop() {

@@ -6,6 +6,8 @@
 #include <sys/uio.h>
 #include <unistd.h>
 #include <time.h>
+#include <chrono>
+#include <thread>
 
 /*
 #include <stdio.h>
@@ -70,6 +72,7 @@ class gameW : public Napi::AsyncWorker {
             if(nread < 0) {
                 std::cout << errno << std::endl;
             }
+	    std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
 
         if(score1 == 2) {
