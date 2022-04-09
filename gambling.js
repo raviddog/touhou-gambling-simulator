@@ -19,21 +19,9 @@ const client = new tmi.Client({
     channels: ['#raviddog']
 });
 
-var usernames = [];
-var bank = [];
-var currentbets = [];
-var winnermsg = "";
 
 var pollid;
 var poll_left, poll_right;
-
-usernames = loadFromJson("usernames");
-bank = loadFromJson("bank");
-
-client.connect();
-read.init();
-read.loadHP();
-mainLoop();
 
 const postparams = {
     host: 'api.twitch.tv', //No need to include 'http://' or 'www.'
@@ -381,3 +369,10 @@ function loadFromJson(filename) {
     }
     return result;
 }
+
+
+
+client.connect();
+read.init();
+read.loadHP();
+mainLoop();
