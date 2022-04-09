@@ -128,7 +128,7 @@ class roundW : public Napi::AsyncWorker {
 
     void OnOK() override {
         using namespace Napi;
-        Callback().Call({Env().Null(), Value::From(Env())});
+        Callback().Call({Env().Null()});
     }
 
 
