@@ -31,7 +31,7 @@ const postparams = {
     headers: {
         'Content-Type': 'application/json', //Specifying to the server that we are sending JSON 
         'Authorization' : 'Bearer ' + config.auth,
-        'Client-Id' : config.client-id
+        'Client-Id' : config.client_id
     }
 };
 
@@ -43,7 +43,7 @@ const patchparams = {
     headers: {
         'Content-Type': 'application/json', //Specifying to the server that we are sending JSON 
         'Authorization' : 'Bearer ' + config.auth,
-        'Client-Id' : config.client-id
+        'Client-Id' : config.client_id
     }
 };
 
