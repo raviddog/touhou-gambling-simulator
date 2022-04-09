@@ -169,7 +169,13 @@ client.on('message', (channel, tags, message, self) => {
 });
 
 function roundtwo(err) {
-    endPoll();
+    var data = {
+        "broadcaster_id" : "57079379",
+        "id" : pollid,
+        "status" : "LOCKED",
+    };
+
+    sendPollEnd(JSON.stringify(data));
 }
 
 
@@ -180,6 +186,7 @@ function roundtwo(err) {
 // read.init(pid);
 function gameDone(err, winner) {
     console.log('match winner: ' + winner);
+    endPoll(winner);
     
     // wait a bit for the menu to come up
     // start next match
@@ -242,6 +249,7 @@ function startPoll() {
 
     
 }
+
 
 function endPoll(winner) {
 
