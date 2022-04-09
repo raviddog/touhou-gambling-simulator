@@ -57,13 +57,42 @@ client.on('message', (channel, tags, message, self) => {
                     if(side == 'left' || side == 'right') {
                         if(amount > bank[id]) {
                             client.say('#raviddog', "amount exceeds balance of " + bank[id]);
+                        } else if(amount < 1) {
+                            client.say('#raviddog', "bet 1 or more");
                         } else {
                             if(side == 'left') side = 0;
                             if(side == 'right') side = 1;
-                            //  apply hp multipliers here
-
+                            
                             bank[id] -= amount;
-                            amount *= 2;
+                            //  apply hp multipliers here
+                            var multi = 2;
+
+                            var hp1 = read.checkHP1();
+                            var hp2 = read.checkHP2();
+
+                            var diff = hp1 - hp2;
+                            if(diff < 0) {
+                                diff = Math.abs(diff);
+                                //  hp2 higher
+                                if(side == 1) {
+                                    //  decrease
+                                    //  diff goes 1 - 9
+                                    multi -= (diff / 10);
+                                }
+                            } else if(diff > 0) {
+                                diff = Math.abs(diff);
+                                //  hp1 higher
+                                if(side == 0) {
+                                    //  decrease
+                                    //  diff goes 1 - 9
+                                    multi -= (diff / 10);
+                                }
+                            } else {
+                                //  hp is equal, apply max multiplier
+                            }
+                            
+                            amount *= multi;
+                            amount = Math.round(amount);
                             //  place bet
                             currentbets.push({
                                 user: id,
@@ -76,20 +105,44 @@ client.on('message', (channel, tags, message, self) => {
                     } else {
                         client.say('#raviddog', "pick left or right side");
                     }
+                } else {
+                    client.say('#raviddog', "!bet [left/right] [amount]");
                 }
-            } else if(args[0] = 'balance') {
+            }
+            if(args[0] == 'balance') {
                 var id = usernames.indexOf(tags.username);
                 if(id < 0) {
                     usernames.push(tags.username);
                     //  start with 1000
                     bank.push(1000);
                     id = usernames.indexOf(tags.username);
-                    client.say('#raviddog', '@' + tags.username + ' balance is ' + bank[id]);
+                    client.say('#raviddog', '@' + tags.username + ' balance is raviddPoint ' + bank[id]);
                 } else {
-                    client.say('#raviddog', "@" + tags.username + " balance is " + bank[id]);
+                    client.say('#raviddog', "@" + tags.username + " balance is raviddPoint " + bank[id]);
                 }
-            } else if(args[0] = 'test') {
-                client.say('#raviddog', "test");
+            }
+            if(args[0] == 'bail') {
+                var id = usernames.indexOf(tags.username);
+                if(id < 0) {
+                    client.say('#raviddog', 'use !balance to get an initial balance');
+                } else {
+                    if(bank[id] == 0) {
+                        var bet = -1;
+                        currentbets.forEach(function(value, index) {
+                            if(value.user == id) {
+                                bet = 0;
+                            }
+                        });
+                        if(bet < 0) {
+                            bank[id] = 100;
+                            client.say('#raviddog', 'raviddPoint 100 bail granted');
+                        } else {
+                            client.say('#raviddog', 'cant bail if a bet is placed');
+                        }
+                    } else {
+                        client.say('#raviddog', 'cant bail if balance not 0');
+                    }
+                }
             }
         }
     }
@@ -103,26 +156,33 @@ client.on('message', (channel, tags, message, self) => {
 // read.init(pid);
 function gameDone(err, winner) {
     console.log('match winner: ' + winner);
-    var count = 0;
+    var count = 0, total = 0;;
 
     // process bets
 
     currentbets.forEach(function(value, index) {
-        var id = value.id;
-        if(value.side == winner) {
+        var id = value.user;
+
+        if(value.team == winner) {
             bank[id] += value.bet;
+            total += value.bet;
         }
         count++;
 
     });
 
     console.log('processed ' + count + ' bets');
+    var t;
+    if(winner == 0) {t = "left"};
+    if(winner == 1) {t = "right"};
+    client.say('#raviddog', `match winner: ${t}, raviddPoint ${total} paid out`);
 
     currentbets = [];
 
     //  save values
     saveToJson("usernames", usernames);
     saveToJson("bank", bank);
+
 
     // wait a bit for the menu to come up
     // start next match
@@ -148,25 +208,18 @@ function sleep(ms) {
 
 function startGameFromPrev() {
     console.log('starting next match');
-    cp.execSync('sleep 1s');
-    cp.execSync('xdotool keydown Control_L');
-    cp.execSync('sleep 5s');
-    cp.execSync('xdotool keyup Control_L');
-    cp.execSync('sleep 1s');
-    cp.execSync('xdotool key --delay 2000 Down Z');
-    console.log('a');
-    cp.execSync('sleep 5s');
-
-    var p1 = between(0, 16);
-    var p2 = between(0, 16);
-
-    console.log('b');
-    cp.execSync('xdotool key --repeat ' + p1 + ' --delay 500 Down');
-    cp.execSync('xdotool key Z');
-    cp.execSync('xdotool key --repeat ' + p2 + ' --delay 500 Down');
-    cp.execSync('xdotool key Z');
-    cp.execSync('sleep 1s');
+    cp.execSync('xdotool keydown Control_L sleep 2 keyup Control_L sleep 1');
     cp.execSync('xdotool key --delay 500 Down Z');
+    cp.execSync('sleep 3s');
+
+    var p1 = between(0, 16) + 1;
+    var p2 = between(0, 16) + 1;
+
+    cp.execSync('xdotool key --repeat ' + p1 + ' --delay 200 Down');
+    cp.execSync('xdotool sleep 0.2 keydown Z sleep 0.2 keyup Z sleep 0.5');
+    cp.execSync('xdotool key --repeat ' + p2 + ' --delay 200 Down');
+    cp.execSync('xdotool sleep 0.2 keydown Z sleep 0.2 keyup Z sleep 0.5');
+    cp.execSync('xdotool keydown Down sleep 0.2 keyup Down sleep 0.5 keydown Z sleep 0.2 keyup Z');
 }
 
 function exitCurrentGame() {
@@ -186,7 +239,7 @@ function between(min, max) {
     let backupFile = filename + Date.now() + '.json';
     fs.writeFile(fullFilename, JSON.stringify(data),
         function(err) {
-            if(err) console.log(err);
+            if(err) console.log('save error ' + err);
         });
 }
 
@@ -197,7 +250,7 @@ function loadFromJson(filename) {
         let data = fs.readFileSync(fullFilename);
         result = JSON.parse(data)
     } catch (err) {
-        console.log(err);
+        console.log('read error ' + err);
         // result = [];
     }
     return result;

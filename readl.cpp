@@ -208,7 +208,11 @@ Napi::Value checkHP1(const Napi::CallbackInfo &info) {
     
     ssize_t nread = process_vm_readv(pid, local, 1, remote, 1, 0);
     if(nread < 0) {
-        std::cout << errno << std::endl;
+        // std::cout << "hp1 err " << errno << std::endl;
+        //  player structs not initialised yet because match starting
+        //  reply with full hp
+        Napi::Value ret = Napi::Value::From(env, 10);
+        return ret;
     }
 
     Napi::Value ret = Napi::Value::From(env, hp);
@@ -228,7 +232,11 @@ Napi::Value checkHP2(const Napi::CallbackInfo &info) {
     
     ssize_t nread = process_vm_readv(pid, local, 1, remote, 1, 0);
     if(nread < 0) {
-        std::cout << errno << std::endl;
+        // std::cout << "hp2 err " << errno << std::endl;
+        //  player structs not initialised yet because match starting
+        //  reply with full hp
+        Napi::Value ret = Napi::Value::From(env, 10);
+        return ret;
     }
 
     Napi::Value ret = Napi::Value::From(env, hp);
