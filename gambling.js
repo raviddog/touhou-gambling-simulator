@@ -54,9 +54,11 @@ client.on('message', (channel, tags, message, self) => {
                         id = usernames.indexOf(tags.username);
                     }
                     var side = args[1];
-                    var amount = args[2];
+                    var amount = parseInt(args[2]);
                     if(side == 'left' || side == 'right') {
-                        if(amount > bank[id]) {
+						if(isNaN(amount)) {
+                            client.say('#raviddog', "bet with number");
+						} else if(amount > bank[id]) {
                             client.say('#raviddog', "amount exceeds balance of " + bank[id]);
                         } else if(amount < 1) {
                             client.say('#raviddog', "bet 1 or more");
