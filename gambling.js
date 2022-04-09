@@ -5,6 +5,7 @@ const fs = require('fs');
 const cp = require('child_process');
 const { syncBuiltinESMExports } = require('module');
 // const read = require('./build/Debug/read.node');
+const https = require('https');
 
 const client = new tmi.Client({
     connection: {
@@ -23,6 +24,9 @@ var bank = [];
 var currentbets = [];
 var winnermsg = "";
 
+var pollid;
+var poll_left, poll_right;
+
 usernames = loadFromJson("usernames");
 bank = loadFromJson("bank");
 
@@ -30,6 +34,30 @@ client.connect();
 read.init();
 read.loadHP();
 mainLoop();
+
+const postparams = {
+    host: 'api.twitch.tv', //No need to include 'http://' or 'www.'
+    port: 443,
+    path: '/helix/predictions',
+    method: 'POST',
+    headers: {
+        'Content-Type': 'application/json', //Specifying to the server that we are sending JSON 
+        'Authorization' : 'Bearer ' + config.auth,
+        'Client-Id' : config.client-id
+    }
+};
+
+const patchparams = {
+    host: 'api.twitch.tv', //No need to include 'http://' or 'www.'
+    port: 443,
+    path: '/helix/predictions',
+    method: 'PATCH',
+    headers: {
+        'Content-Type': 'application/json', //Specifying to the server that we are sending JSON 
+        'Authorization' : 'Bearer ' + config.auth,
+        'Client-Id' : config.client-id
+    }
+};
 
 
 client.on('connected', (address) => {
@@ -43,6 +71,7 @@ client.on('message', (channel, tags, message, self) => {
     if(message.substring(0, 1) == '!') {
         var args = message.slice(1).split(' ');
         if(args.length > 0) {
+            /*
             if(args[0] == 'bet') {
                 if(args.length > 2) {
                     //  todo edit return based on bot hp
@@ -144,10 +173,14 @@ client.on('message', (channel, tags, message, self) => {
                         client.say('#raviddog', 'cant bail if balance not 0');
                     }
                 }
-            }
+            }*/
         }
     }
 });
+
+function roundtwo(err) {
+    endPoll();
+}
 
 
 // var pid = cp.execSync('xprop -name "Touhou Kaeidzuka ~ Phantasmagoria of Flower View v1.50a" | awk "/_NET_WM_PID\\(CARDINAL\\)/{print $NF}"');
@@ -157,39 +190,126 @@ client.on('message', (channel, tags, message, self) => {
 // read.init(pid);
 function gameDone(err, winner) {
     console.log('match winner: ' + winner);
-    var count = 0, total = 0;;
-
-    // process bets
-
-    currentbets.forEach(function(value, index) {
-        var id = value.user;
-
-        if(value.team == winner) {
-            bank[id] += value.bet;
-            total += value.bet;
-        }
-        count++;
-
-    });
-
-    console.log('processed ' + count + ' bets');
-    var t;
-    if(winner == 0) {t = "left"};
-    if(winner == 1) {t = "right"};
-    winnermsg = `match winner: ${t}, raviddPoint ${total} paid out`;
-
-    currentbets = [];
-
-    //  save values
-    saveToJson("usernames", usernames);
-    saveToJson("bank", bank);
-
-
+    
     // wait a bit for the menu to come up
     // start next match
     startGameFromPrev();
     read.gameAsync(gameDone);
-    client.say('#raviddog', winnermsg);
+    // client.say('#raviddog', winnermsg);
+
+    //  start poll
+    startPoll();
+    read.waitRoundAsync(roundtwo);
+    
+
+}
+
+function startPoll() {
+    const shots = [
+        "Reimu",
+        "Marisa",
+        "Sakuya",
+        "Youmu",
+        "Reisen",
+        "Cirno",
+        "Lyrica",
+        "Mystia",
+        "Tewi",
+        "Aya",
+        "Medicine",
+        "Yuuka",
+        "Komachi",
+        "Eiki",
+        "Merlin",
+        "Lunasa"
+    ];
+
+    var p1 = read.checkChar1();
+    if(p1 >= 0 && p1 <= 15) {
+        p1 = shots[p1];
+    }
+
+    var p2 = read.checkChar2();
+    if(p2 >= 0 && p2 <= 15) {
+        p2 = shots[p2];
+    }
+
+    var data = {
+        "broadcaster_id" : "57079379",
+        "title" : `${p1} vs ${p2}`,
+        "outcomes" : [
+            {
+                "title" : p1
+            },
+            {
+                "title" : p2
+            }
+        ],
+        "prediction_window" : 1800
+    };
+
+    sendPoll(data);
+
+    
+}
+
+function endPoll(winner) {
+
+    var w;
+    if(winner < 1) w = poll_left;
+    if(winner > 0) w = poll_right;
+
+    var data = {
+        "broadcaster_id" : "57079379",
+        "id" : pollid,
+        "status" : "RESOLVED",
+        "winning_outcome_id" : w
+    };
+
+    sendPollEnd(data);
+}
+
+function sendPoll(d) {
+    function OnResponse(response) {
+        var data = '';
+
+        response.on('data', function(chunk) {
+            data += chunk; //Append each chunk of data received to this variable.
+        });
+        response.on('end', function() {
+            try {
+                var dd = JSON.parse(data);
+                pollid = dd.data[0].id;
+                poll_left = dd.data[0].outcomes[0].id;
+                poll_right = dd.data[0].outcomes[1].id;
+            } catch (e) {
+                console.log(e)
+            }
+        });
+    }
+
+    var request = https.request(postparams, OnResponse); //Create a request object.
+
+    request.write(d); //Send off the request.
+    request.end(); //End the request.
+}
+
+function sendPollEnd(d) {
+    function OnResponse(response) {
+        var data = '';
+
+        response.on('data', function(chunk) {
+            data += chunk; //Append each chunk of data received to this variable.
+        });
+        response.on('end', function() {
+            //  dont do anything?
+        });
+    }
+
+    var request = https.request(patchparams, OnResponse); //Create a request object.
+
+    request.write(d); //Send off the request.
+    request.end(); //End the request.
 }
 
 function mainLoop() {

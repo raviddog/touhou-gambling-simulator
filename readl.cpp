@@ -44,6 +44,9 @@ const uint32_t p1hp_pt = 0x4A7D94;
 const uint32_t p2hp_pt = 0x4A7DCC;
 const uint32_t hp_offset = 0xA8;
 
+const uint32_t p1char = 0x4A7DB0;
+const uint32_t p2char = 0x4A7DE8;
+
 uint32_t p1hp = 0x4A7D94;
 uint32_t p2hp = 0x4A7DCC;
 
@@ -93,11 +96,58 @@ class gameW : public Napi::AsyncWorker {
         int val = 0;
 };
 
+class roundW : public Napi::AsyncWorker {
+    public:
+        roundW(Napi::Function &callback) : Napi::AsyncWorker(callback) {}
+        ~roundW() {};
+
+    void Execute() override {
+        uint32_t score1 = 0, score2 = 0;
+
+        struct iovec local[2];
+        local[0].iov_base = &score1;
+        local[0].iov_len = 4;
+        local[1].iov_base = &score2;
+        local[1].iov_len = 4;
+
+        struct iovec remote[2];
+        remote[0].iov_base = (void*)p1score;
+        remote[0].iov_len = 4;
+        remote[1].iov_base = (void*)p2score;
+        remote[1].iov_len = 4;
+
+        while(score1 != 1 && score2 != 1) {
+            ssize_t nread = process_vm_readv(pid, local, 2, remote, 2, 0);
+            if(nread < 0) {
+                std::cout << errno << std::endl;
+            }
+	    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+
+    }
+
+    void OnOK() override {
+        using namespace Napi;
+        Callback().Call({Env().Null(), Value::From(Env())});
+    }
+
+
+
+    private:
+        int val = 0;
+};
+
 void gameAsync(const Napi::CallbackInfo &info) {
     Napi::Function callback = info[0].As<Napi::Function>();
     gameW* g = new gameW(callback);
     g->Queue();
     //  function queued i guess
+}
+
+void waitRoundAsync(const Napi::CallbackInfo &info) {
+    Napi::Function callback = info[0].As<Napi::Function>();
+    roundW *r = new roundW(callback);
+    r->Queue();
 }
 
 
@@ -246,6 +296,56 @@ Napi::Value checkHP2(const Napi::CallbackInfo &info) {
     return ret;
 }
 
+Napi::Value checkChar1(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    unsigned int p1c;
+    
+    struct iovec local[1];
+    local[0].iov_base = &p1c;
+    local[0].iov_len = 4;
+    struct iovec remote[1];
+    remote[0].iov_base = (void*)p1char;
+    remote[0].iov_len = 4;
+    
+    ssize_t nread = process_vm_readv(pid, local, 1, remote, 1, 0);
+    if(nread < 0) {
+        // std::cout << "hp1 err " << errno << std::endl;
+        // yikes?
+        //  player structs not initialised yet because match starting
+        //  reply with full hp
+        Napi::Value ret = Napi::Value::From(env, -1);
+        return ret;
+    }
+
+    Napi::Value ret = Napi::Value::From(env, p1c);
+    return ret;
+}
+
+Napi::Value checkChar2(const Napi::CallbackInfo &info) {
+    Napi::Env env = info.Env();
+    unsigned int p2c;
+    
+    struct iovec local[1];
+    local[0].iov_base = &p2c;
+    local[0].iov_len = 4;
+    struct iovec remote[1];
+    remote[0].iov_base = (void*)p2char;
+    remote[0].iov_len = 4;
+    
+    ssize_t nread = process_vm_readv(pid, local, 1, remote, 1, 0);
+    if(nread < 0) {
+        // std::cout << "hp1 err " << errno << std::endl;
+        // yikes?
+        //  player structs not initialised yet because match starting
+        //  reply with full hp
+        Napi::Value ret = Napi::Value::From(env, -1);
+        return ret;
+    }
+
+    Napi::Value ret = Napi::Value::From(env, p2c);
+    return ret;
+}
+
 void init(const Napi::CallbackInfo &info) {
     srand(time(NULL));
     std::cout << "Enter PID: ";
@@ -296,12 +396,15 @@ Napi::Boolean matchRunning(const Napi::CallbackInfo &info) {
 Napi::Object Init(Napi::Env env, Napi::Object exports) {
     // init();
     exports.Set("gameAsync", Napi::Function::New(env, gameAsync));
+    exports.Set("waitRoundAsync", Napi::Function::New(env, waitRoundAsync));
     exports.Set("init", Napi::Function::New(env, init));
     exports.Set("loadHP", Napi::Function::New(env, loadHP));
     exports.Set("game", Napi::Function::New(env, game));
     exports.Set("gameP", Napi::Function::New(env, gameP));
     exports.Set("checkHP1", Napi::Function::New(env, checkHP1));
     exports.Set("checkHP2", Napi::Function::New(env, checkHP2));
+    exports.Set("checkChar1", Napi::Function::New(env, checkChar1));
+    exports.Set("checkChar2", Napi::Function::New(env, checkChar2));
     exports.Set("matchRunning", Napi::Function::New(env, matchRunning));
     return exports;
 }
