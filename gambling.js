@@ -316,11 +316,13 @@ function sendPollEnd(d) {
 
 function mainLoop() {
     //  wait for start command in chat
+    startPoll();
 
 
     // while not signalled to exit
     // wait for match to end
-    read.gameAsync(gameDone)    
+    read.gameAsync(gameDone);
+    read.waitRoundAsync(roundtwo);
     
 }
 
