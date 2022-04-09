@@ -238,7 +238,7 @@ function startPoll() {
         "prediction_window" : 1800
     };
 
-    sendPoll(data);
+    sendPoll(JSON.stringify(data));
 
     
 }
@@ -256,7 +256,7 @@ function endPoll(winner) {
         "winning_outcome_id" : w
     };
 
-    sendPollEnd(data);
+    sendPollEnd(JSON.stringify(data));
 }
 
 function sendPoll(d) {
