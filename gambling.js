@@ -186,17 +186,18 @@ function roundtwo(err) {
 // read.init(pid);
 function gameDone(err, winner) {
     console.log('match winner: ' + winner);
+//	stuff the shit in the end of endpoll
     endPoll(winner);
     
     // wait a bit for the menu to come up
     // start next match
-    startGameFromPrev();
-    read.gameAsync(gameDone);
+//    startGameFromPrev();
+//    read.gameAsync(gameDone);
     // client.say('#raviddog', winnermsg);
 
     //  start poll
-    startPoll();
-    read.waitRoundAsync(roundtwo);
+//    startPoll();
+//    read.waitRoundAsync(roundtwo);
     
 
 }
@@ -212,14 +213,16 @@ function startPoll() {
         "Lyrica",
         "Mystia",
         "Tewi",
+        "Yuuka",
         "Aya",
         "Medicine",
-        "Yuuka",
         "Komachi",
         "Eiki",
         "Merlin",
         "Lunasa"
     ];
+
+cp.execSync('sleep 10s');
 
     var p1 = read.checkChar1();
     if(p1 >= 0 && p1 <= 15) {
@@ -244,6 +247,7 @@ function startPoll() {
         ],
         "prediction_window" : 1800
     };
+console.log(data);
 
     sendPoll(JSON.stringify(data));
 
@@ -282,6 +286,7 @@ function sendPoll(d) {
                 poll_right = dd.data[0].outcomes[1].id;
             } catch (e) {
                 console.log(e)
+		console.log(data);
             }
         });
     }
@@ -300,7 +305,14 @@ function sendPollEnd(d) {
             data += chunk; //Append each chunk of data received to this variable.
         });
         response.on('end', function() {
+console.log(data);
             //  dont do anything?
+	    startGameFromPrev();
+    	    read.gameAsync(gameDone);
+    // client.say('#raviddog', winnermsg);
+
+    //  start poll
+            startPoll();
         });
     }
 
@@ -318,7 +330,7 @@ function mainLoop() {
     // while not signalled to exit
     // wait for match to end
     read.gameAsync(gameDone);
-    read.waitRoundAsync(roundtwo);
+   // read.waitRoundAsync(roundtwo);
     
 }
 
