@@ -90,6 +90,17 @@ function processLeaderboard(dd) {
         return 0;
     });
 
+    var niceLeaderboardUsers = "";
+    var niceLeaderboardBank = "";
+
+    leaderboard.forEach(function (element) {
+        niceLeaderboardUsers += element.name + "\n";
+        niceLeaderboardBank += element.bank + "\n";
+    });
+
+    writeRaw("niceLeaderboardUsers", niceLeaderboardUsers);
+    writeRaw("niceLeaderboardBank", niceLeaderboardBank);
+
     saveToJson("leaderboard", leaderboard);
 }
 
@@ -315,6 +326,20 @@ function endPoll(winner) {
         wins[p2] += 1;
         losses[p1] += 1;
     }
+    
+    var niceWins = "";
+    var niceLosses = "";
+
+    wins.forEach(function(element) {
+        niceWins += element + "\n";
+    });
+
+    losses.forEach(function(element) {
+        niceLosses += element + "\n";
+    });
+
+    writeRaw("niceWins", niceWins);
+    writeRaw("niceLosses", niceLosses);
 
     saveToJson("wins", wins);
     saveToJson("losses", losses);
@@ -438,6 +463,14 @@ function between(min, max) {
     let fullFilename = config.statfolder + filename + '.json';
     let backupFile = filename + Date.now() + '.json';
     fs.writeFile(fullFilename, JSON.stringify(data),
+        function(err) {
+            if(err) console.log('save error ' + err);
+        });
+}
+
+function writeRaw(filename, data) {
+    let fullFilename = config.statfolder + filename + '.txt';
+    fs.writeFile(fullFilename, data,
         function(err) {
             if(err) console.log('save error ' + err);
         });
