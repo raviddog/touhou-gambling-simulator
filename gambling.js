@@ -56,7 +56,7 @@ const patchparams = {
     }
 };
 
-function processLeaderboard(data) {
+function processLeaderboard(dd) {
     
     var winning = dd.data[0].winning_outcome_id;
     var winners = [];
@@ -90,7 +90,7 @@ function processLeaderboard(data) {
         return 0;
     });
 
-    saveToJson(leaderboard);
+    saveToJson("leaderboard", leaderboard);
 }
 
 
@@ -316,8 +316,8 @@ function endPoll(winner) {
         losses[p1] += 1;
     }
 
-    saveToJson(wins);
-    saveToJson(losses);
+    saveToJson("wins", wins);
+    saveToJson("losses", losses);
 
     var data = {
         "broadcaster_id" : "57079379",
@@ -363,13 +363,13 @@ function sendPollEnd(d) {
             data += chunk; //Append each chunk of data received to this variable.
         });
         response.on('end', function() {
-        try {
-            var dd = JSON.parse(data);
-            processLeaderboard(dd);
-        } catch (e) {
-            console.log(e);
-            console.log(data);
-        }
+            try {
+                var dd = JSON.parse(data);
+                processLeaderboard(dd);
+            } catch (e) {
+                console.log(e);
+                console.log(data);
+            }
             //  parse data for leaderboards
         
             //  dont do anything?
