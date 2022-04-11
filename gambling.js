@@ -19,6 +19,15 @@ const client = new tmi.Client({
     channels: ['#raviddog']
 });
 
+var wins = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+var losses = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+var leaderboard = [];
+//  name
+//  bank
+leaderboard = loadFromJson("leaderboard");
+wins = loadFromJson("wins");
+losses = loadFromJson("losses");
 
 var pollid;
 var poll_left, poll_right;
@@ -47,11 +56,47 @@ const patchparams = {
     }
 };
 
+function processLeaderboard(data) {
+    
+    var winning = dd.data[0].winning_outcome_id;
+    var winners = [];
+
+    if(dd.data[0].winning_outcome_id == dd.data[0].outcomes[0].id) {
+        winners = dd.data[0].outcomes[0].top_predictors;
+    } else if(dd.data[0].winning_outcome_id == dd.data[0].outcomes[1].id) {
+        winners = dd.data[0].outcomes[1].top_predictors;
+    }
+    
+    winners.forEach(function (element, index) {
+        var l = leaderboard.find(function(cur) {
+            return cur.name == element.user_name;
+        });
+        if(l === null || l === undefined) {
+            var tmp = {
+                "name" : element.user_name,
+                "bank" : 0
+            }
+            leaderboard.push(tmp);
+            l = tmp;
+        }
+
+        l.bank += element.channel_points_used;
+        l.bank += element.channel_points_won;
+    });
+
+    leaderboard.sort(function(a, b) {
+        if(a.bank > b.bank) return 1;
+        if(a.bank < b.bank) return -1;
+        return 0;
+    });
+
+    saveToJson(leaderboard);
+}
+
 
 client.on('connected', (address) => {
     console.log('Connected to ' + address);
 });
-
 
 
 client.on('message', (channel, tags, message, self) => {
@@ -222,7 +267,7 @@ function startPoll() {
         "Lunasa"
     ];
 
-cp.execSync('sleep 10s');
+    cp.execSync('sleep 3s');
 
     var p1 = read.checkChar1();
     if(p1 >= 0 && p1 <= 15) {
@@ -247,7 +292,7 @@ cp.execSync('sleep 10s');
         ],
         "prediction_window" : 1800
     };
-console.log(data);
+    console.log(data);
 
     sendPoll(JSON.stringify(data));
 
@@ -256,10 +301,23 @@ console.log(data);
 
 
 function endPoll(winner) {
+    var p1 = read.checkChar1();
+    var p2 = read.checkChar2();
 
     var w;
-    if(winner < 1) w = poll_left;
-    if(winner > 0) w = poll_right;
+    if(winner < 1) {
+        w = poll_left;
+        wins[p1] += 1;
+        losses[p2] += 1;
+    }
+    if(winner > 0) {
+        w = poll_right;
+        wins[p2] += 1;
+        losses[p1] += 1;
+    }
+
+    saveToJson(wins);
+    saveToJson(losses);
 
     var data = {
         "broadcaster_id" : "57079379",
@@ -305,13 +363,21 @@ function sendPollEnd(d) {
             data += chunk; //Append each chunk of data received to this variable.
         });
         response.on('end', function() {
-console.log(data);
+        try {
+            var dd = JSON.parse(data);
+            processLeaderboard(dd);
+        } catch (e) {
+            console.log(e);
+            console.log(data);
+        }
+            //  parse data for leaderboards
+        
             //  dont do anything?
-	    startGameFromPrev();
+            startGameFromPrev();
     	    read.gameAsync(gameDone);
-    // client.say('#raviddog', winnermsg);
+            // client.say('#raviddog', winnermsg);
 
-    //  start poll
+        //  start poll
             startPoll();
         });
     }
@@ -369,7 +435,7 @@ function between(min, max) {
   }
 
   function saveToJson(filename, data) {
-    let fullFilename = filename + '.json';
+    let fullFilename = config.statfolder + filename + '.json';
     let backupFile = filename + Date.now() + '.json';
     fs.writeFile(fullFilename, JSON.stringify(data),
         function(err) {
@@ -378,7 +444,7 @@ function between(min, max) {
 }
 
 function loadFromJson(filename) {
-    let fullFilename = filename+'.json';
+    let fullFilename = config.statfolder + filename+'.json';
     let result = [];
     try {
         let data = fs.readFileSync(fullFilename);
