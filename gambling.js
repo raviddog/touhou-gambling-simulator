@@ -85,8 +85,8 @@ function processLeaderboard(dd) {
     });
 
     leaderboard.sort(function(a, b) {
-        if(a.bank > b.bank) return 1;
-        if(a.bank < b.bank) return -1;
+        if(a.bank > b.bank) return -1;
+        if(a.bank < b.bank) return 1;
         return 0;
     });
 
@@ -318,14 +318,19 @@ function endPoll(winner) {
     var w;
     if(winner < 1) {
         w = poll_left;
-        wins[p1] += 1;
-        losses[p2] += 1;
+        if(p1 != p2) {
+            wins[p1] += 1;
+            losses[p2] += 1;
+        }
     }
     if(winner > 0) {
         w = poll_right;
-        wins[p2] += 1;
-        losses[p1] += 1;
+        if(p1 != p2) {
+            wins[p2] += 1;
+            losses[p1] += 1;
+        }
     }
+
     
     var niceWins = "";
     var niceLosses = "";
